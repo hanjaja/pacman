@@ -4,65 +4,28 @@ const ctx = canvas.getContext('2d');
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
+let score = 0;
+let duration = 60;
+
+let countdownElement = document.getElementById("countdown");
+countdownElement.textContent = duration;
+
+let scoreElement = document.getElementById("score");
+scoreElement.textContent = score;
+
 class Boundary {
     static width = 40
     static height = 40
-    constructor({ position }) {
+    constructor({ position, color }) {
         this.position = position
+        this.color = color
         this.width = 40
         this.height = 40
     }
 
     draw() {
-        ctx.fillStyle = '#7f7f7f';
+        ctx.fillStyle = this.color;
         ctx.fillRect(this.position.x, this.position.y, this.width, this.height)
-    }
-}
-
-class Corridor {
-    static width = 40
-    static height = 40
-    constructor({ position }) {
-        this.position = position
-        this.width = 40
-        this.height = 40
-    }
-
-    draw() {
-        ctx.fillStyle = '#d6dbd6';
-        ctx.fillRect(this.position.x, this.position.y, this.width, this.height)
-    }
-}
-
-class Obstacle {
-    static width = 40
-    static height = 40
-    constructor({ position }) {
-        this.position = position
-        this.width = 40
-        this.height = 40
-    }
-
-    draw() {
-        ctx.fillStyle = '#569232';
-        ctx.fillRect(this.position.x, this.position.y, this.width, this.height)
-    }
-}
-
-class Center {
-    static width = 40
-    static height = 40
-    constructor({ position }) {
-        this.position = position
-        this.width = 40
-        this.height = 40
-    }
-
-    draw() {
-        ctx.fillStyle = '#d6dbd6';
-        ctx.strokeStyle = '#324a9f';
-        ctx.fillRect(this.position.x, this.position.y, this.width, this.height)
-        ctx.strokeRect(this.position.x, this.position.y, this.width, this.height)
     }
 }
 
@@ -88,6 +51,22 @@ class Player {
     }
 }
 
+class Pellet {
+    constructor({ position }) {
+        this.position = position
+        this.radius = 3
+    }
+
+    draw() {
+        ctx.fillStyle = 'yellow';
+        ctx.beginPath();
+        ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.closePath();
+    }
+}
+
+const pellets = []
 const boundaries = []
 const corridors = []
 const obstacles = []
@@ -152,16 +131,16 @@ map.forEach((row, i) => {
     row.forEach((symbol, j) => {
         switch (symbol) {
             case '-':
-                boundaries.push(new Boundary({ position: { x: Boundary.width * j, y: Boundary.height * i } }))
+                boundaries.push(new Boundary({ position: { x: Boundary.width * j, y: Boundary.height * i }, color: '#7f7f7f' }))
                 break
             case ' ':
-                corridors.push(new Corridor({ position: { x: Corridor.width * j, y: Corridor.height * i } }))
+                pellets.push(new Pellet({ position: { x: Boundary.width * j + Boundary.width / 2, y: Boundary.height * i + Boundary.height / 2 } }))
                 break
             case 'o':
-                obstacles.push(new Obstacle({ position: { x: Obstacle.width * j, y: Obstacle.height * i } }))
+                boundaries.push(new Boundary({ position: { x: Boundary.width * j, y: Boundary.height * i }, color: '#569232' }))
                 break
             case 'c':
-                centers.push(new Center({ position: { x: Center.width * j, y: Center.height * i } }))
+                boundaries.push(new Boundary({ position: { x: Boundary.width * j, y: Boundary.height * i }, color: '#324a9f' }))
                 break
         }
     })
@@ -169,10 +148,10 @@ map.forEach((row, i) => {
 
 function circleCollidesWithRectangle({ circle, rectangle }) {
     return (
-        circle.position.y - circle.radius + circle.velocity.y <= rectangle.position.y + rectangle.height &&
-        circle.position.y + circle.radius + circle.velocity.y >= rectangle.position.y &&
-        circle.position.x + circle.radius + circle.velocity.x >= rectangle.position.x &&
-        circle.position.x - circle.radius + circle.velocity.x <= rectangle.position.x + rectangle.width
+        circle.position.y - circle.radius + (circle.velocity.y * 3) <= rectangle.position.y + rectangle.height &&
+        circle.position.y + circle.radius + (circle.velocity.y * 3) >= rectangle.position.y &&
+        circle.position.x + circle.radius + (circle.velocity.x * 3) >= rectangle.position.x &&
+        circle.position.x - circle.radius + (circle.velocity.x * 3) <= rectangle.position.x + rectangle.width
     )
 }
 
@@ -187,7 +166,7 @@ function animate() {
                 circle: {
                     ...player, velocity: {
                         x: 0,
-                        y: -1
+                        y: -2
                     }
                 },
                 rectangle: boundary
@@ -196,47 +175,13 @@ function animate() {
                 player.velocity.y = 0
                 break
             } else {
-                player.velocity.y = -1
+                player.velocity.y = -2
+                
             }
         }
 
-        for (let i = 0; i < obstacles.length; i++) {
-            const obstacle = obstacles[i]
-            if (circleCollidesWithRectangle({
-                circle: {
-                    ...player, velocity: {
-                        x: 0,
-                        y: -1
-                    }
-                },
-                rectangle: obstacle
-            })
-            ) {
-                player.velocity.y = 0
-                break
-            } else {
-                player.velocity.y = -1
-            }
-        }
 
-        for (let i = 0; i < centers.length; i++) {
-            const center = centers[i]
-            if (circleCollidesWithRectangle({
-                circle: {
-                    ...player, velocity: {
-                        x: 0,
-                        y: -1
-                    }
-                },
-                rectangle: center
-            })
-            ) {
-                player.velocity.y = 0
-                break
-            } else {
-                player.velocity.y = -1
-            }
-        }
+
     } else if ((keys.ArrowDown.pressed || keys.s.pressed) && (lastKey === 'ArrowDown' || lastKey === 's')) {
         for (let i = 0; i < boundaries.length; i++) {
             const boundary = boundaries[i]
@@ -244,7 +189,7 @@ function animate() {
                 circle: {
                     ...player, velocity: {
                         x: 0,
-                        y: 1
+                        y: 2
                     }
                 },
                 rectangle: boundary
@@ -253,54 +198,20 @@ function animate() {
                 player.velocity.y = 0
                 break
             } else {
-                player.velocity.y = 1
+                player.velocity.y = 2
+                
             }
         }
 
-        for (let i = 0; i < obstacles.length; i++) {
-            const obstacle = obstacles[i]
-            if (circleCollidesWithRectangle({
-                circle: {
-                    ...player, velocity: {
-                        x: 0,
-                        y: 1
-                    }
-                },
-                rectangle: obstacle
-            })
-            ) {
-                player.velocity.y = 0
-                break
-            } else {
-                player.velocity.y = 1
-            }
-        }
 
-        for (let i = 0; i < centers.length; i++) {
-            const center = centers[i]
-            if (circleCollidesWithRectangle({
-                circle: {
-                    ...player, velocity: {
-                        x: 0,
-                        y: 1
-                    }
-                },
-                rectangle: center
-            })
-            ) {
-                player.velocity.y = 0
-                break
-            } else {
-                player.velocity.y = 1
-            }
-        }
+
     } else if ((keys.ArrowLeft.pressed || keys.a.pressed) && (lastKey === 'ArrowLeft' || lastKey === 'a')) {
         for (let i = 0; i < boundaries.length; i++) {
             const boundary = boundaries[i]
             if (circleCollidesWithRectangle({
                 circle: {
                     ...player, velocity: {
-                        x: -1,
+                        x: -2,
                         y: 0
                     }
                 },
@@ -310,54 +221,19 @@ function animate() {
                 player.velocity.x = 0
                 break
             } else {
-                player.velocity.x = -1
+                player.velocity.x = -2
+                
             }
         }
 
-        for (let i = 0; i < obstacles.length; i++) {
-            const obstacle = obstacles[i]
-            if (circleCollidesWithRectangle({
-                circle: {
-                    ...player, velocity: {
-                        x: -1,
-                        y: 0
-                    }
-                },
-                rectangle: obstacle
-            })
-            ) {
-                player.velocity.x = 0
-                break
-            } else {
-                player.velocity.x = -1
-            }
-        }
 
-        for (let i = 0; i < centers.length; i++) {
-            const center = centers[i]
-            if (circleCollidesWithRectangle({
-                circle: {
-                    ...player, velocity: {
-                        x: -1,
-                        y: 0
-                    }
-                },
-                rectangle: center
-            })
-            ) {
-                player.velocity.x = 0
-                break
-            } else {
-                player.velocity.x = -1
-            }
-        }
     } else if ((keys.ArrowRight.pressed || keys.d.pressed) && (lastKey === 'ArrowRight' || lastKey === 'd')) {
         for (let i = 0; i < boundaries.length; i++) {
             const boundary = boundaries[i]
             if (circleCollidesWithRectangle({
                 circle: {
                     ...player, velocity: {
-                        x: 1,
+                        x: 2,
                         y: 0
                     }
                 },
@@ -367,46 +243,22 @@ function animate() {
                 player.velocity.x = 0
                 break
             } else {
-                player.velocity.x = 1
+                player.velocity.x = 2
+                
             }
         }
 
-        for (let i = 0; i < obstacles.length; i++) {
-            const obstacle = obstacles[i]
-            if (circleCollidesWithRectangle({
-                circle: {
-                    ...player, velocity: {
-                        x: 1,
-                        y: 0
-                    }
-                },
-                rectangle: obstacle
-            })
-            ) {
-                player.velocity.x = 0
-                break
-            } else {
-                player.velocity.x = 1
-            }
-        }
+    }
 
-        for (let i = 0; i < centers.length; i++) {
-            const center = centers[i]
-            if (circleCollidesWithRectangle({
-                circle: {
-                    ...player, velocity: {
-                        x: 0,
-                        y: 1
-                    }
-                },
-                rectangle: center
-            })
-            ) {
-                player.velocity.x = 0
-                break
-            } else {
-                player.velocity.x = 1
-            }
+    for (let i = pellets.length - 1; i >= 0; i--) {
+        const pellet = pellets[i]
+        pellet.draw()
+
+        if (Math.hypot(pellet.position.x - player.position.x, pellet.position.y - player.position.y) < pellet.radius + player.radius) {
+            pellets.splice(i, 1)
+
+            score += 100;
+            scoreElement.textContent = score;
         }
     }
 
@@ -423,26 +275,9 @@ function animate() {
         corridor.draw()
     })
 
-    obstacles.forEach((obstacle) => {
-        obstacle.draw()
-
-        if (circleCollidesWithRectangle({ circle: player, rectangle: obstacle })) {
-            player.velocity.x = 0
-            player.velocity.y = 0
-        }
-    })
-
-    centers.forEach((center) => {
-        center.draw()
-
-        if (circleCollidesWithRectangle({ circle: player, rectangle: center })) {
-            player.velocity.x = 0
-            player.velocity.y = 0
-        }
-    })
-
     player.update()
 }
+
 
 animate()
 
@@ -513,3 +348,23 @@ addEventListener('keyup', ({ key }) => {
             break
     }
 })
+
+function startTimer() {
+  let countdown = duration;
+  const timerInterval = setInterval(() => {
+    // Display the remaining time
+    countdownElement.textContent = countdown;
+
+    // Decrease the time by 1 second
+    countdown--;
+
+    // Check if the timer has reached 0
+    if (countdown < 0) {
+      clearInterval(timerInterval);
+      console.log("Timer completed!");
+    }
+  }, 1000);
+}
+
+startTimer();
+
