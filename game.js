@@ -128,7 +128,6 @@ function updateGhostPosition(ghost) {
         // Collision occurred between ghost and Pac-Man
         console.log('Ghost collided with Pac-Man!');
         // Perform action, such as ending the game or reducing Pac-Man's lives
-        // ...
         if (!specialItemEaten) {
             score -= 500;
             scoreElement.textContent = score;
@@ -147,7 +146,6 @@ function updateGhostPosition(ghost) {
             ghost2X = 0.0;
             ghost2Y = -0.025;
         }
-
         return;
     }
 
@@ -248,9 +246,6 @@ function updateGhostPosition(ghost) {
     }
 }
 
-
-
-
 function resizeCanvasToDisplaySize(canvas) {
     const displayWidth = canvas.clientWidth;
     const displayHeight = canvas.clientHeight;
@@ -320,10 +315,6 @@ function drawScene(gl, program) {
             vec2(pacmanX - 0.05, pacmanY + offset + 0.05)
         ];
     }
-
-
-
-
 
     var ghost1Positions = [
         vec2(ghost1X - 0.05, ghost1Y + 0.10),
@@ -544,8 +535,6 @@ function drawScene(gl, program) {
         console.log('you win')
         gameOver = true;
     }
-
-
 }
 
 let animationId = null;
@@ -567,9 +556,6 @@ function main() {
         }
         animationId = requestAnimationFrame(render);
     }
-
-
-
     animationId = requestAnimationFrame(render);
 }
 
@@ -590,7 +576,6 @@ function startTimer() {
             console.log("Timer completed!");
         }
     }, 1000);
-
 }
 
 let gamePaused = true; // Start the game in a paused state
